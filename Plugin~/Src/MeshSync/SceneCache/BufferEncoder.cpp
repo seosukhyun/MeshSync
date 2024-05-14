@@ -5,7 +5,7 @@
 
 #define ZSTD_STATIC_LINKING_ONLY
 #include <zstd.h>
-#pragma comment(lib, "libzstd_static.lib")
+#pragma comment(lib, "libzstd.so")
 
 namespace ms {
 

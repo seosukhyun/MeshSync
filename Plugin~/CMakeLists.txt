@@ -1,86 +1,66 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.18)
+cmake_minimum_required(VERSION 3.18)
 
-if(APPLE)
-    set(CMAKE_OSX_DEPLOYMENT_TARGET "10.12" CACHE STRING "Minimum OS X deployment version")    
-endif()
+# Project name
+project(MeshSyncPlugin)
 
-PROJECT(MeshSyncPlugin)
-
+# Set CMake module path and source root directory
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/Build/cmake_modules)
 set(src_root ${CMAKE_CURRENT_SOURCE_DIR}/Src)
 
-# allow CMake to organize files by folders
+# Allow CMake to organize files by folders
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-# prerequisites
-find_package(Poco REQUIRED COMPONENTS Net)
-find_package(ZSTD)  # Use ZSTD for scene cache compression
+# Include directories and library directories for ZSTD
+set(ZSTD_INCLUDE_DIR "/Users/sukhyunseo/Development/MeshSync/Plugin~/External/zstd/include")
+set(ZSTD_LIBRARY_DIR "/Users/sukhyunseo/Development/MeshSync/Plugin~/External/zstd/lib/android/arm64-v8a")
+set(ZSTD_LIBRARY "/Users/sukhyunseo/Development/MeshSync/Plugin~/External/zstd/lib/android/arm64-v8a/libzstd.so")
 
-if(WIN32 OR ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "x86_64")
-    include(ISPC)       # Use Intel ISPC to generate SIMDified code. Will define "ENABLE_ISPC"
-endif() 
+include_directories(${ZSTD_INCLUDE_DIR})
+link_directories(${ZSTD_LIBRARY_DIR})
 
-if(ENABLE_ISPC)
-    message("ISPC: ${ENABLE_ISPC}")
-else()    
-    message("ISPC Off")
-endif()
+# Include directories and library directories for Poco
+set(POCO_INCLUDE_DIR "/Users/sukhyunseo/Development/MeshSync/Plugin~/External/poco/include")
+set(POCO_LIBRARY_DIR "/Users/sukhyunseo/Development/MeshSync/Plugin~/External/poco/lib/android/arm64-v8a")
 
+include_directories(${POCO_INCLUDE_DIR})
+link_directories(${POCO_LIBRARY_DIR})
 
+# Disable ISPC (if necessary, you can add a condition here to control ISPC)
+message("ISPC Off")
 
-# ----------------------------------------------------------------------------------------------------------------------
-
-if(APPLE)
-    set(PLATFORM "Mac")
-    set(MAC ON)
-elseif(ANDROID)
-    set(PLATFORM "Android")
-elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-    set(PLATFORM "Linux")
-    set(LINUX ON)
-
-elseif(WIN32) 
-    add_definitions(-DmuEnablePPL)
-
-    # Additional Poco Net dependencies on Windows
-    list(APPEND Poco_LIBRARIES "ws2_32.lib;Iphlpapi.lib" )           
-    
-    #Compile with MultiThreaded DLL flag to use dynamically-linked runtime library (Poco)
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MDd")    
-    
-    #Set /fp. We need so that -infinity == infinity == NaN. See Transform::setupDataFlags()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fp:fast")
-    
-endif()
+# List of Poco libraries to link against
+list(APPEND Poco_LIBRARIES 
+    "libPocoActiveRecord.so"
+    "libPocoData.so"
+    "libPocoEncodings.so"
+    "libPocoFoundation.so"
+    "libPocoJSON.so"
+    "libPocoMongoDB.so"
+    "libPocoNet.so"
+    "libPocoPrometheus.so"
+    "libPocoRedis.so"
+    "libPocoUtil.so"
+    "libPocoXML.so"
+    "libPocoZip.so"
+)
 
 # Custom scripts
 include(AddPlugin)
 
-if(WIN32)
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
-else()
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
-endif()
+# Set C++ standard and compiler flags
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Force Unicode character set
 add_definitions(-DUNICODE -D_UNICODE)
 
-# Use Poco static lib
+# Use Poco static lib (if needed, otherwise this can be removed)
 add_definitions(-DPOCO_STATIC)
 
-
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-
 # Options
-option(BUILD_TESTS "Tests" OFF)
+option(BUILD_TESTS "Build tests" OFF)
 
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-#Specify available modules
+# Specify available modules
 add_subdirectory(${src_root}/MeshUtils)
 add_subdirectory(${src_root}/MeshSync)
 add_subdirectory(${src_root}/mscore)
@@ -89,4 +69,3 @@ add_subdirectory(${src_root}/mscore)
 if(BUILD_TESTS)
     add_subdirectory(${src_root}/MeshSyncTest)
 endif()
-
